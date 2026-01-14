@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ko">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>아이딧(IDID) 노래</title>
+
+<script type="text/javascript">
+/*********************************************************
+ * 정렬할 항목 (노래 리스트)
+ *********************************************************/
+var namMember = new Array(
+  "<br>제멋대로 찬란하게</br>",
+  "<br>SLOW TIDE</br>",
+  "<br>STEP IT UP</br>",
+  "<br>ImPerfect</br>",
+  "<br>So G.oo.D (네가 미치도록 좋아)</br>",
+  "<br>STICKY BOMB</br>",
+  "<br>꿈을 꿰뚫는 순간(飛必沖天)</br>",
+  "<br>꽃피울 CROWN</br>",
+  "<br>PUSH BACK</br>",
+  "<br>Heaven Smiles</br>"
+);
+
+var lstMember = [];
+var parent = [];
+var equal = [];
+var rec = [];
+var cmp1, cmp2;
+var head1, head2;
+var nrec;
+var numQuestion;
+var totalSize;
+var finishSize;
+var finishFlag;
+
+function initList(){
+  var n = 0;
+  var mid;
+
+  lstMember[n] = [];
+  for (var i=0; i<namMember.length; i++) {
+    lstMember[n][i] = i;
+  }
+  parent[n] = -1;
+  totalSize = 0;
+  n++;
+
+  for (var i=0; i<lstMember.length; i++) {
+    if (lstMember[i].length >= 2) {
+      mid = Math.ceil(lstMember[i].length / 2);
+      lstMember[n] = lstMember[i].slice(0, mid);
+      totalSize += lstMember[n].length;
+      parent[n++] = i;
+
+      lstMember[n] = lstMember[i].slice(mid);
+      totalSize += lstMember[n].length;
+      parent[n++] = i;
+    }
+  }
+
+  for (var i=0; i<namMember.length; i++) rec[i] = 0;
+  nrec = 0;
+
+  for (var i=0; i<=namMember.length; i++) equal[i] = -1;
+
+  cmp1 = lstMember.length - 2;
+  cmp2 = lstMember.length - 1;
+  head1 = head2 = 0;
+  numQuestion = 1;
+  finishSize = 0;
+  finishFlag = 0;
+}
+
+function sortList(flag){
+  if (flag < 0) pick(cmp1, head1++);
+  else pick(cmp2, head2++);
+
+  function pick(cmp, head){
+    rec[nrec++] = lstMember[cmp][head];
+    finishSize++;
+    while (equal[rec[nrec-1]] != -1) {
+      rec[nrec++] = lstMember[cmp][head++];
+      finishSize++;
+    }
+  }
+
+  if (head1 < lstMember[cmp1].length && head2 == lstMember[cmp2].length) {
+    while (head1 < lstMember[cmp1].length) {
+      rec[nrec++] = lstMember[cmp1][head1++];
+      finishSize++;
+    }
+  } else if (head2 < lstMember[cmp2].length && head1 == lstMember[cmp1].length) {
+    while (head2 < lstMember[cmp2].length) {
+      rec[nrec++] = lstMember[cmp2][head2++];
+      finishSize++;
+    }
+  }
+
+  if (head1 == lstMember[cmp1].length && head2 == lstMember[cmp2].length) {
+    for (var i=0; i<rec.length; i++) {
+      lstMember[parent[cmp1]][i] = rec[i];
+    }
+    lstMember.pop(); lstMember.pop();
+    cmp1 -= 2; cmp2 -= 2;
+    head1 = head2 = 0;
+    rec = [];
+    nrec = 0;
+  }
+
+  if (cmp1 < 0) {
+    document.getElementById("battleNumber").innerHTML =
+      "정렬 완료 (" + Math.floor(finishSize*100/totalSize) + "%)";
+    showResult();
+    finishFlag = 1;
+  } else {
+    showImage();
+  }
+}
+
+function showImage(){
+  document.getElementById("battleNumber").innerHTML =
+    "Battle No." + numQuestion;
+  document.getElementById("leftField").innerHTML =
+    namMember[lstMember[cmp1][head1]];
+  document.getElementById("rightField").innerHTML =
+    namMember[lstMember[cmp2][head2]];
+  numQuestion++;
+}
+
+function showResult(){
+  var str = "<table style='margin:auto; border-collapse:collapse;'>";
+  str += "<tr><th>순위</th><th>곡명</th></tr>";
+  for (var i=0; i<namMember.length; i++){
+    str += "<tr><td>"+(i+1)+"</td><td>"+namMember[lstMember[0][i]]+"</td></tr>";
+  }
+  str += "</table>";
+  document.getElementById("resultField").innerHTML = str;
+}
+</script>
+
+<style>
+body{
+  background-color:#030303;
+  color:#00e1ff;
+  font-family:'굴림', Gulim, sans-serif;
+}
+
+#mainTable{
+  width:300px;
+  margin:auto;
+  border-spacing:10px;
+}
+
+#leftField, #rightField{
+  width:140px;
+  height:160px;
+  border:1px solid #00e1ff;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.15s ease-in-out;
+}
+
+/* hover */
+#leftField:hover, #rightField:hover{
+  background:#050505;
+  box-shadow:0 0 8px #00e1ff;
+}
+
+/* click (한 단계 더 가는 느낌) */
+#leftField:active, #rightField:active{
+  transform:scale(0.96);
+  box-shadow:0 0 4px #00e1ff;
+}
+
+th, td{
+  border:1px solid #00e1ff;
+  padding:6px;
+}
+</style>
+</head>
+
+<body>
+<table id="mainTable">
+  <tr>
+    <td id="battleNumber" colspan="2">&nbsp;</td>
+  </tr>
+  <tr>
+    <td id="leftField" onclick="if(!finishFlag)sortList(-1);"></td>
+    <td id="rightField" onclick="if(!finishFlag)sortList(1);"></td>
+  </tr>
+</table>
+
+<br>
+<div id="resultField" style="text-align:center;"></div>
+
+<script>
+initList();
+showImage();
+</script>
+</body>
+</html>
