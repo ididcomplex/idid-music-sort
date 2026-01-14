@@ -1,7 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"> 
 <html lang="ko">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>아이딧(IDID) 노래 소트</title>
 
 <script type="text/javascript">
@@ -22,7 +23,7 @@ var namMember = new Array(
 );
 
 /*********************************************************
- * 아래는 소트 로직(원형 유지)
+ * 소트 로직(원형 유지)
  *********************************************************/
 var lstMember = new Array();
 var parent = new Array();
@@ -82,17 +83,43 @@ function initList(){
   finishSize = 0;
   finishFlag = 0;
 
-  updateProgress(); // 진행도 초기 표시
+  // 결과/카드 초기화
+  var tc = document.getElementById("topCardWrap");
+  if (tc) tc.innerHTML = "";
+  var rf = document.getElementById("resultField");
+  if (rf) rf.innerHTML = "";
+
+  // 비교 화면 다시 표시(안정적: display 제어)
+  var cw = document.getElementById("compareWrap");
+  if (cw) cw.style.display = "";
+
+  // 버튼 텍스트 원복
+  var pr = document.getElementById("progress");
+  if (pr) pr.innerHTML = "진행도 0%";
+
+  updateProgress();
 }
 
 function updateProgress(){
   var percent = 0;
   if (totalSize > 0) percent = Math.floor(finishSize * 100 / totalSize);
-  document.getElementById("progress").innerHTML = "진행도 " + percent + "%";
+  var el = document.getElementById("progress");
+  if (el) el.innerHTML = "진행도 " + percent + "%";
+}
+
+// ✅ 선택 래퍼: 미세 진동 + 실제 선택 처리
+function choose(flag){
+  if (finishFlag != 0) return;
+
+  // 미세 진동 (지원 기기에서만)
+  try {
+    if (navigator && navigator.vibrate) navigator.vibrate(18);
+  } catch(e) {}
+
+  sortList(flag);
 }
 
 // flag: -1(왼쪽 선택), 0(동점), 1(오른쪽 선택)
-// 이번 버전은 동점 버튼을 없앴으므로 실제로는 -1 / 1만 들어옴
 function sortList(flag){
   var i;
 
@@ -124,7 +151,7 @@ function sortList(flag){
     }
   }
   else {
-    // (동점 버튼 제거했지만, 로직은 남겨둠)
+    // (동점 UI는 없지만, 로직 유지)
     rec[nrec] = lstMember[cmp1][head1];
     head1++;
     nrec++;
@@ -193,7 +220,8 @@ function sortList(flag){
 
   // 끝났으면 결과 표시
   if (cmp1 < 0) {
-    document.getElementById("progress").innerHTML = "정렬 완료!";
+    var pr = document.getElementById("progress");
+    if (pr) pr.innerHTML = "정렬 완료!";
     showResult();
     finishFlag = 1;
   } else {
@@ -201,13 +229,31 @@ function sortList(flag){
   }
 }
 
-// 결과 표시
+// 결과 표시 + 1위 카드(펄스) + 비교영역 숨김(안정적: display:none)
 function showResult(){
+  // ✅ 결과 페이지에서 비교(선택) 영역 숨기기
+  var cw = document.getElementById("compareWrap");
+  if (cw) cw.style.display = "none";
+
   var ranking = 1;
   var sameRank = 1;
   var str = "";
   var i;
 
+  // 1위 카드
+  var topIdx = lstMember[0][0];
+  var topName = namMember[topIdx];
+
+  var card =
+    "<div id='topCard'>" +
+      "<div class='badge'>🏆 1위</div>" +
+      "<div class='song'>" + topName + "</div>" +
+    "</div>";
+
+  var tc = document.getElementById("topCardWrap");
+  if (tc) tc.innerHTML = card;
+
+  // 결과 테이블
   str += "<table id='resultTable'>";
   str += "<tr><th>순위</th><th>이름</th></tr>";
 
@@ -226,21 +272,23 @@ function showResult(){
   }
   str += "</table>";
 
-  document.getElementById("resultField").innerHTML = str;
+  var rf = document.getElementById("resultField");
+  if (rf) rf.innerHTML = str;
 }
 
 // 비교 화면 표시
 function showImage(){
-  var leftStr = "" + toNameFace(lstMember[cmp1][head1]);
-  var rightStr = "" + toNameFace(lstMember[cmp2][head2]);
+  var leftStr = namMember[lstMember[cmp1][head1]];
+  var rightStr = namMember[lstMember[cmp2][head2]];
 
   document.getElementById("leftField").innerHTML = leftStr;
   document.getElementById("rightField").innerHTML = rightStr;
 }
 
-// 이름 변환(확장용)
-function toNameFace(n){
-  return namMember[n];
+// 다시하기
+function resetSort(){
+  initList();
+  showImage();
 }
 </script>
 
@@ -254,97 +302,195 @@ body{
   padding: 0;
 }
 
+/* 가운데 정렬용 래퍼 */
+#wrap{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 24px 0;
+}
+
 /* 상단 타이틀/진행도 */
 #battleNumber{
   text-align:center;
-  padding: 10px 0;
+  padding: 14px 0 8px 0;
 }
 #title{
-  font-size: 16px;
+  font-size: 22px;
   font-weight: bold;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 #progress{
-  font-size: 12px;
-  opacity: 0.85;
+  font-size: 15px;
+  opacity: 0.9;
 }
 
-/* 메인 선택 테이블 */
+/* 비교 영역(선택 화면) */
 #mainTable{
-  width: 300px;              /* width 줄임 */
-  margin-left: auto;
-  margin-right: auto;
+  width: 420px;
+  margin: 0 auto;
   border-collapse: separate;
-  border-spacing: 10px 8px;
+  border-spacing: 14px 10px;
 }
 
-#leftField, #rightField{
-  width: 140px;
-  height: 160px;
-  border: 1px solid #00e1ff;
+/* td는 table-cell 유지(세로로 내려오는 현상 방지) */
+.choiceCell{
+  padding: 0;
+}
+
+/* 실제 선택 박스는 div에 flex 적용 (세로/가로 중앙 정확) */
+.choiceBox{
+  width: 200px;
+  height: 240px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1.5px solid #00e1ff;
   background-color: #030303;
-  text-align: center;
-  vertical-align: middle;
   cursor: pointer;
+
+  font-size: 18px;
+  line-height: 1.3;
+  text-align: center;
+
   transition: all 0.15s ease-in-out;
+
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  touch-action: manipulation;
 }
 
 /* hover */
-#leftField:hover, #rightField:hover{
+.choiceBox:hover{
   background-color: #050505;
-  box-shadow: 0 0 6px #00e1ff, 0 0 12px rgba(0, 225, 255, 0.6);
+  box-shadow: 0 0 8px #00e1ff, 0 0 16px rgba(0, 225, 255, 0.6);
 }
 
-/* click (한 단계 더 가는 느낌) */
-#leftField:active, #rightField:active{
-  transform: scale(0.96);
-  box-shadow: 0 0 4px #00e1ff;
+/* click */
+.choiceBox:active{
+  transform: scale(0.95);
+  box-shadow: 0 0 6px #00e1ff;
+}
+
+/* 1위 카드 */
+#topCard{
+  width: 420px;
+  margin: 14px auto 12px auto;
+  padding: 14px 16px;
+  border: 2px solid #00e1ff;
+  background-color: #030303;
+  border-radius: 12px;
+  animation: neonPulse 2.2s ease-in-out infinite;
+}
+
+#topCard .badge{
+  font-size: 13px;
+  font-weight: bold;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+#topCard .song{
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 1.25;
+}
+
+/* 은은한 펄스 */
+@keyframes neonPulse {
+  0%   { box-shadow: 0 0 10px rgba(0,225,255,0.45); }
+  50%  { box-shadow: 0 0 18px rgba(0,225,255,0.75); }
+  100% { box-shadow: 0 0 10px rgba(0,225,255,0.45); }
 }
 
 /* 결과 테이블 */
 #resultTable{
   margin: 0 auto;
   border-collapse: collapse;
-  font-size: 12px;
-  min-width: 260px;
+  font-size: 15px;
+  min-width: 340px;
 }
 #resultTable th, #resultTable td{
-  border: 1px solid #00e1ff;
-  padding: 6px 8px;
-}
-#resultTable th{
-  font-weight: bold;
+  border: 1.5px solid #00e1ff;
+  padding: 8px 10px;
 }
 .rankCell{
   text-align: right;
-  width: 50px;
+  width: 60px;
 }
 .nameCell{
   text-align: left;
 }
-</style>
 
+/* 다시하기 버튼 */
+#resetBtn{
+  margin: 12px auto 0 auto;
+  padding: 10px 14px;
+  border: 1.5px solid #00e1ff;
+  background: #030303;
+  color: #00e1ff;
+  font-family:'굴림', Gulim, sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.15s ease-in-out;
+}
+#resetBtn:hover{
+  background-color: #050505;
+  box-shadow: 0 0 8px rgba(0,225,255,0.55);
+}
+#resetBtn:active{
+  transform: scale(0.97);
+}
+
+/* 모바일 최적화 */
+@media (max-width: 480px){
+  #mainTable{ width: 380px; }
+  .choiceBox{
+    width: 180px;
+    height: 260px;
+    font-size: 19px;
+  }
+  #topCard{ width: 92%; }
+  #title{ font-size: 24px; }
+  #progress{ font-size: 16px; }
+  #resultTable{ font-size: 16px; }
+}
+</style>
 </head>
 
 <body>
+<div id="wrap">
 
-<table id="mainTable" align="center">
-  <tr>
-    <td id="battleNumber" colspan="2">
-      <div id="title">당신의 최애 IDID 노래는?</div>
-      <div id="progress">진행도 0%</div>
-    </td>
-  </tr>
-  <tr>
-    <td id="leftField" onclick="if(finishFlag==0)sortList(-1);">&nbsp;</td>
-    <td id="rightField" onclick="if(finishFlag==0)sortList(1);">&nbsp;</td>
-  </tr>
-</table>
+  <!-- ✅ 비교(선택) 영역: 결과에서 display:none 처리(안정적) -->
+  <div id="compareWrap">
+    <table id="mainTable" align="center">
+      <tr>
+        <td id="battleNumber" colspan="2">
+          <div id="title">당신의 최애 IDID 노래는?</div>
+          <div id="progress">진행도 0%</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="choiceCell" onclick="choose(-1);">
+          <div id="leftField" class="choiceBox">&nbsp;</div>
+        </td>
+        <td class="choiceCell" onclick="choose(1);">
+          <div id="rightField" class="choiceBox">&nbsp;</div>
+        </td>
+      </tr>
+    </table>
+  </div>
 
-<br>
+  <!-- 1위 카드 / 결과 -->
+  <div id="topCardWrap" style="text-align:center;"></div>
+  <div id="resultField" style="text-align:center;"></div>
 
-<div id="resultField" style="text-align:center;">
-  <!-- 결과가 여기 표시됨 -->
+  <!-- 다시하기 -->
+  <button id="resetBtn" type="button" onclick="resetSort();">다시하기</button>
+
 </div>
 
 <script type="text/javascript">
