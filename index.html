@@ -6,7 +6,7 @@
 
 <script type="text/javascript">
 /*********************************************************
- * 1) 정렬할 항목(노래 리스트)
+ * 정렬할 항목(노래 리스트)
  *********************************************************/
 var namMember = new Array(
   "<br>제멋대로 찬란하게</br>",
@@ -22,13 +22,12 @@ var namMember = new Array(
 );
 
 /*********************************************************
- * 2) 소트 로직 변수들
+ * 아래는 소트 로직(원형 유지)
  *********************************************************/
 var lstMember = new Array();
 var parent = new Array();
 var equal = new Array();
 var rec = new Array();
-
 var cmp1, cmp2;
 var head1, head2;
 var nrec;
@@ -37,9 +36,6 @@ var totalSize;
 var finishSize;
 var finishFlag;
 
-/*********************************************************
- * 3) 초기화
- *********************************************************/
 function initList(){
   var n = 0;
   var mid;
@@ -54,16 +50,17 @@ function initList(){
   totalSize = 0;
   n++;
 
-  // 분할
   for (i=0; i<lstMember.length; i++) {
     if (lstMember[i].length >= 2) {
       mid = Math.ceil(lstMember[i].length / 2);
 
+      lstMember[n] = new Array();
       lstMember[n] = lstMember[i].slice(0, mid);
       totalSize += lstMember[n].length;
       parent[n] = i;
       n++;
 
+      lstMember[n] = new Array();
       lstMember[n] = lstMember[i].slice(mid, lstMember[i].length);
       totalSize += lstMember[n].length;
       parent[n] = i;
@@ -75,53 +72,27 @@ function initList(){
   for (i=0; i<namMember.length; i++) rec[i] = 0;
   nrec = 0;
 
-  // 동점(무승부) 저장
+  // 동점(무승부) 저장 리스트
   for (i=0; i<=namMember.length; i++) equal[i] = -1;
 
   cmp1 = lstMember.length - 2;
   cmp2 = lstMember.length - 1;
   head1 = 0;
   head2 = 0;
-
   finishSize = 0;
   finishFlag = 0;
 
-  updateProgress();
+  updateProgress(); // 진행도 초기 표시
 }
 
-/*********************************************************
- * 4) 진행도 표시
- *********************************************************/
 function updateProgress(){
   var percent = 0;
   if (totalSize > 0) percent = Math.floor(finishSize * 100 / totalSize);
-  var el = document.getElementById("progress");
-  if (el) el.innerHTML = "진행도 " + percent + "%";
+  document.getElementById("progress").innerHTML = "진행도 " + percent + "%";
 }
 
-/*********************************************************
- * 5) 햅틱(미세 진동) + 선택 처리 래퍼
- *    - 모바일에서만 체감되고, 지원 안 하면 그냥 무시됨
- *********************************************************/
-function choose(flag){
-  // finishFlag 체크
-  if (finishFlag != 0) return;
-
-  // 미세 진동 (지원 브라우저에서만)
-  try {
-    if (navigator && navigator.vibrate) {
-      navigator.vibrate(18); // 10~25ms 정도가 "미세" 느낌
-    }
-  } catch (e) {}
-
-  sortList(flag);
-}
-
-/*********************************************************
- * 6) 소트 수행
- * flag: -1(왼쪽), 0(동점), 1(오른쪽)
- * 이번 UI는 동점 버튼이 없으므로 -1/1만 들어옴
- *********************************************************/
+// flag: -1(왼쪽 선택), 0(동점), 1(오른쪽 선택)
+// 이번 버전은 동점 버튼을 없앴으므로 실제로는 -1 / 1만 들어옴
 function sortList(flag){
   var i;
 
@@ -153,7 +124,7 @@ function sortList(flag){
     }
   }
   else {
-    // (동점 UI는 없지만 로직 유지)
+    // (동점 버튼 제거했지만, 로직은 남겨둠)
     rec[nrec] = lstMember[cmp1][head1];
     head1++;
     nrec++;
@@ -181,7 +152,7 @@ function sortList(flag){
     }
   }
 
-  // 한쪽 리스트를 다 읽었으면 나머지 복사
+  // 한쪽 리스트를 다 읽었을 때 남은 것 복사
   if (head1 < lstMember[cmp1].length && head2 == lstMember[cmp2].length) {
     while (head1 < lstMember[cmp1].length) {
       rec[nrec] = lstMember[cmp1][head1];
@@ -220,10 +191,9 @@ function sortList(flag){
 
   updateProgress();
 
-  // 완료면 결과 표시
+  // 끝났으면 결과 표시
   if (cmp1 < 0) {
-    var p = document.getElementById("progress");
-    if (p) p.innerHTML = "정렬 완료!";
+    document.getElementById("progress").innerHTML = "정렬 완료!";
     showResult();
     finishFlag = 1;
   } else {
@@ -231,9 +201,7 @@ function sortList(flag){
   }
 }
 
-/*********************************************************
- * 7) 결과 표시
- *********************************************************/
+// 결과 표시
 function showResult(){
   var ranking = 1;
   var sameRank = 1;
@@ -261,14 +229,18 @@ function showResult(){
   document.getElementById("resultField").innerHTML = str;
 }
 
-/*********************************************************
- * 8) 비교 화면 표시
- *********************************************************/
+// 비교 화면 표시
 function showImage(){
-  document.getElementById("leftField").innerHTML =
-    namMember[lstMember[cmp1][head1]];
-  document.getElementById("rightField").innerHTML =
-    namMember[lstMember[cmp2][head2]];
+  var leftStr = "" + toNameFace(lstMember[cmp1][head1]);
+  var rightStr = "" + toNameFace(lstMember[cmp2][head2]);
+
+  document.getElementById("leftField").innerHTML = leftStr;
+  document.getElementById("rightField").innerHTML = rightStr;
+}
+
+// 이름 변환(확장용)
+function toNameFace(n){
+  return namMember[n];
 }
 </script>
 
@@ -285,117 +257,77 @@ body{
 /* 상단 타이틀/진행도 */
 #battleNumber{
   text-align:center;
-  padding: 14px 0;
+  padding: 10px 0;
 }
-
 #title{
-  font-size: 22px;
+  font-size: 16px;
   font-weight: bold;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
-
 #progress{
-  font-size: 15px;
-  opacity: 0.9;
+  font-size: 12px;
+  opacity: 0.85;
 }
 
 /* 메인 선택 테이블 */
 #mainTable{
-  width: 420px;
+  width: 300px;              /* width 줄임 */
   margin-left: auto;
   margin-right: auto;
   border-collapse: separate;
-  border-spacing: 14px 10px;
+  border-spacing: 10px 8px;
 }
 
-/* 선택 박스: Flex로 세로/가로 중앙 정렬 */
 #leftField, #rightField{
-  width: 200px;
-  height: 240px;
-
-  display: flex;
-  align-items: center;     /* 세로 중앙 */
-  justify-content: center; /* 가로 중앙 */
-
-  border: 1.5px solid #00e1ff;
+  width: 140px;
+  height: 160px;
+  border: 1px solid #00e1ff;
   background-color: #030303;
-  cursor: pointer;
-
-  font-size: 18px;
-  line-height: 1.3;
   text-align: center;
-
+  vertical-align: middle;
+  cursor: pointer;
   transition: all 0.15s ease-in-out;
-
-  /* 모바일에서 300ms 딜레이/하이라이트 줄이기 */
-  -webkit-tap-highlight-color: rgba(0,0,0,0);
-  touch-action: manipulation;
 }
 
 /* hover */
 #leftField:hover, #rightField:hover{
   background-color: #050505;
-  box-shadow:
-    0 0 8px #00e1ff,
-    0 0 16px rgba(0, 225, 255, 0.6);
+  box-shadow: 0 0 6px #00e1ff, 0 0 12px rgba(0, 225, 255, 0.6);
 }
 
-/* click */
+/* click (한 단계 더 가는 느낌) */
 #leftField:active, #rightField:active{
-  transform: scale(0.95);
-  box-shadow: 0 0 6px #00e1ff;
+  transform: scale(0.96);
+  box-shadow: 0 0 4px #00e1ff;
 }
 
 /* 결과 테이블 */
 #resultTable{
   margin: 0 auto;
   border-collapse: collapse;
-  font-size: 15px;
-  min-width: 340px;
+  font-size: 12px;
+  min-width: 260px;
 }
-
 #resultTable th, #resultTable td{
-  border: 1.5px solid #00e1ff;
-  padding: 8px 10px;
+  border: 1px solid #00e1ff;
+  padding: 6px 8px;
 }
-
+#resultTable th{
+  font-weight: bold;
+}
 .rankCell{
   text-align: right;
-  width: 60px;
+  width: 50px;
 }
-
 .nameCell{
   text-align: left;
 }
-
-/* 모바일에서 살짝 더 키우기 */
-@media (max-width: 480px){
-  #mainTable{
-    width: 380px;
-  }
-
-  #title{
-    font-size: 24px;
-  }
-
-  #progress{
-    font-size: 16px;
-  }
-
-  #leftField, #rightField{
-    width: 180px;
-    height: 260px;
-    font-size: 19px;
-  }
-
-  #resultTable{
-    font-size: 16px;
-  }
-}
 </style>
+
 </head>
 
 <body>
+
 <table id="mainTable" align="center">
   <tr>
     <td id="battleNumber" colspan="2">
@@ -404,8 +336,8 @@ body{
     </td>
   </tr>
   <tr>
-    <td id="leftField" onclick="choose(-1);">&nbsp;</td>
-    <td id="rightField" onclick="choose(1);">&nbsp;</td>
+    <td id="leftField" onclick="if(finishFlag==0)sortList(-1);">&nbsp;</td>
+    <td id="rightField" onclick="if(finishFlag==0)sortList(1);">&nbsp;</td>
   </tr>
 </table>
 
@@ -419,5 +351,6 @@ body{
 initList();
 showImage();
 </script>
+
 </body>
 </html>
