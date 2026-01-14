@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>아이딧(IDID) 노래</title>
+<title>아이딧(IDID) 노래 소트</title>
 
 <script type="text/javascript">
 /*********************************************************
- * 정렬할 항목 (노래 리스트)
+ * 정렬할 항목(노래 리스트)
  *********************************************************/
 var namMember = new Array(
   "<br>제멋대로 찬란하게</br>",
@@ -21,14 +21,17 @@ var namMember = new Array(
   "<br>Heaven Smiles</br>"
 );
 
-var lstMember = [];
-var parent = [];
-var equal = [];
-var rec = [];
+/*********************************************************
+ * 아래는 소트 로직(원형 유지)
+ *********************************************************/
+var lstMember = new Array();
+var parent = new Array();
+var equal = new Array();
+var rec = new Array();
 var cmp1, cmp2;
 var head1, head2;
 var nrec;
-var numQuestion;
+
 var totalSize;
 var finishSize;
 var finishFlag;
@@ -36,80 +39,161 @@ var finishFlag;
 function initList(){
   var n = 0;
   var mid;
+  var i;
 
-  lstMember[n] = [];
-  for (var i=0; i<namMember.length; i++) {
+  // 정렬할 배열
+  lstMember[n] = new Array();
+  for (i=0; i<namMember.length; i++) {
     lstMember[n][i] = i;
   }
   parent[n] = -1;
   totalSize = 0;
   n++;
 
-  for (var i=0; i<lstMember.length; i++) {
+  for (i=0; i<lstMember.length; i++) {
     if (lstMember[i].length >= 2) {
       mid = Math.ceil(lstMember[i].length / 2);
+
+      lstMember[n] = new Array();
       lstMember[n] = lstMember[i].slice(0, mid);
       totalSize += lstMember[n].length;
-      parent[n++] = i;
+      parent[n] = i;
+      n++;
 
-      lstMember[n] = lstMember[i].slice(mid);
+      lstMember[n] = new Array();
+      lstMember[n] = lstMember[i].slice(mid, lstMember[i].length);
       totalSize += lstMember[n].length;
-      parent[n++] = i;
+      parent[n] = i;
+      n++;
     }
   }
 
-  for (var i=0; i<namMember.length; i++) rec[i] = 0;
+  // 저장용 배열
+  for (i=0; i<namMember.length; i++) rec[i] = 0;
   nrec = 0;
 
-  for (var i=0; i<=namMember.length; i++) equal[i] = -1;
+  // 동점(무승부) 저장 리스트
+  for (i=0; i<=namMember.length; i++) equal[i] = -1;
 
   cmp1 = lstMember.length - 2;
   cmp2 = lstMember.length - 1;
-  head1 = head2 = 0;
-  numQuestion = 1;
+  head1 = 0;
+  head2 = 0;
   finishSize = 0;
   finishFlag = 0;
+
+  updateProgress(); // 진행도 초기 표시
 }
 
-function sortList(flag){
-  if (flag < 0) pick(cmp1, head1++);
-  else pick(cmp2, head2++);
+function updateProgress(){
+  var percent = 0;
+  if (totalSize > 0) percent = Math.floor(finishSize * 100 / totalSize);
+  document.getElementById("progress").innerHTML = "진행도 " + percent + "%";
+}
 
-  function pick(cmp, head){
-    rec[nrec++] = lstMember[cmp][head];
+// flag: -1(왼쪽 선택), 0(동점), 1(오른쪽 선택)
+// 이번 버전은 동점 버튼을 없앴으므로 실제로는 -1 / 1만 들어옴
+function sortList(flag){
+  var i;
+
+  // rec에 저장
+  if (flag < 0) {
+    rec[nrec] = lstMember[cmp1][head1];
+    head1++;
+    nrec++;
     finishSize++;
+
     while (equal[rec[nrec-1]] != -1) {
-      rec[nrec++] = lstMember[cmp][head++];
+      rec[nrec] = lstMember[cmp1][head1];
+      head1++;
+      nrec++;
+      finishSize++;
+    }
+  }
+  else if (flag > 0) {
+    rec[nrec] = lstMember[cmp2][head2];
+    head2++;
+    nrec++;
+    finishSize++;
+
+    while (equal[rec[nrec-1]] != -1) {
+      rec[nrec] = lstMember[cmp2][head2];
+      head2++;
+      nrec++;
+      finishSize++;
+    }
+  }
+  else {
+    // (동점 버튼 제거했지만, 로직은 남겨둠)
+    rec[nrec] = lstMember[cmp1][head1];
+    head1++;
+    nrec++;
+    finishSize++;
+
+    while (equal[rec[nrec-1]] != -1) {
+      rec[nrec] = lstMember[cmp1][head1];
+      head1++;
+      nrec++;
+      finishSize++;
+    }
+
+    equal[rec[nrec-1]] = lstMember[cmp2][head2];
+
+    rec[nrec] = lstMember[cmp2][head2];
+    head2++;
+    nrec++;
+    finishSize++;
+
+    while (equal[rec[nrec-1]] != -1) {
+      rec[nrec] = lstMember[cmp2][head2];
+      head2++;
+      nrec++;
       finishSize++;
     }
   }
 
+  // 한쪽 리스트를 다 읽었을 때 남은 것 복사
   if (head1 < lstMember[cmp1].length && head2 == lstMember[cmp2].length) {
     while (head1 < lstMember[cmp1].length) {
-      rec[nrec++] = lstMember[cmp1][head1++];
+      rec[nrec] = lstMember[cmp1][head1];
+      head1++;
+      nrec++;
       finishSize++;
     }
-  } else if (head2 < lstMember[cmp2].length && head1 == lstMember[cmp1].length) {
+  }
+  else if (head1 == lstMember[cmp1].length && head2 < lstMember[cmp2].length) {
     while (head2 < lstMember[cmp2].length) {
-      rec[nrec++] = lstMember[cmp2][head2++];
+      rec[nrec] = lstMember[cmp2][head2];
+      head2++;
+      nrec++;
       finishSize++;
     }
   }
 
+  // 부모 리스트 갱신
   if (head1 == lstMember[cmp1].length && head2 == lstMember[cmp2].length) {
-    for (var i=0; i<rec.length; i++) {
+    for (i=0; i<lstMember[cmp1].length + lstMember[cmp2].length; i++) {
       lstMember[parent[cmp1]][i] = rec[i];
     }
-    lstMember.pop(); lstMember.pop();
-    cmp1 -= 2; cmp2 -= 2;
-    head1 = head2 = 0;
-    rec = [];
-    nrec = 0;
+    lstMember.pop();
+    lstMember.pop();
+    cmp1 = cmp1 - 2;
+    cmp2 = cmp2 - 2;
+    head1 = 0;
+    head2 = 0;
+
+    // 새 비교 전에 rec 초기화
+    if (head1 == 0 && head2 == 0) {
+      for (i=0; i<namMember.length; i++) rec[i] = 0;
+      nrec = 0;
+    }
   }
 
+  updateProgress();
+
+  // 끝났으면 결과 표시
   if (cmp1 < 0) {
-    document.getElementById("battleNumber").innerHTML =
-      "정렬 완료 (" + Math.floor(finishSize*100/totalSize) + "%)";
+    document.getElementById("progress").innerHTML = "정렬 완료!";
     showResult();
     finishFlag = 1;
   } else {
@@ -117,85 +201,156 @@ function sortList(flag){
   }
 }
 
-function showImage(){
-  document.getElementById("battleNumber").innerHTML =
-    "Battle No." + numQuestion;
-  document.getElementById("leftField").innerHTML =
-    namMember[lstMember[cmp1][head1]];
-  document.getElementById("rightField").innerHTML =
-    namMember[lstMember[cmp2][head2]];
-  numQuestion++;
-}
-
+// 결과 표시
 function showResult(){
-  var str = "<table style='margin:auto; border-collapse:collapse;'>";
-  str += "<tr><th>순위</th><th>곡명</th></tr>";
-  for (var i=0; i<namMember.length; i++){
-    str += "<tr><td>"+(i+1)+"</td><td>"+namMember[lstMember[0][i]]+"</td></tr>";
+  var ranking = 1;
+  var sameRank = 1;
+  var str = "";
+  var i;
+
+  str += "<table id='resultTable'>";
+  str += "<tr><th>순위</th><th>이름</th></tr>";
+
+  for (i=0; i<namMember.length; i++) {
+    str += "<tr><td class='rankCell'>" + ranking + "</td><td class='nameCell'>" +
+           namMember[lstMember[0][i]] + "</td></tr>";
+
+    if (i < namMember.length - 1) {
+      if (equal[lstMember[0][i]] == lstMember[0][i+1]) {
+        sameRank++;
+      } else {
+        ranking += sameRank;
+        sameRank = 1;
+      }
+    }
   }
   str += "</table>";
+
   document.getElementById("resultField").innerHTML = str;
+}
+
+// 비교 화면 표시
+function showImage(){
+  var leftStr = "" + toNameFace(lstMember[cmp1][head1]);
+  var rightStr = "" + toNameFace(lstMember[cmp2][head2]);
+
+  document.getElementById("leftField").innerHTML = leftStr;
+  document.getElementById("rightField").innerHTML = rightStr;
+}
+
+// 이름 변환(확장용)
+function toNameFace(n){
+  return namMember[n];
 }
 </script>
 
-<style>
+<style type="text/css">
+/* 전체 테마 */
 body{
   background-color:#030303;
   color:#00e1ff;
   font-family:'굴림', Gulim, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
+/* 상단 타이틀/진행도 */
+#battleNumber{
+  text-align:center;
+  padding: 10px 0;
+}
+#title{
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+#progress{
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* 메인 선택 테이블 */
 #mainTable{
-  width:300px;
-  margin:auto;
-  border-spacing:10px;
+  width: 300px;              /* width 줄임 */
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: separate;
+  border-spacing: 10px 8px;
 }
 
 #leftField, #rightField{
-  width:140px;
-  height:160px;
-  border:1px solid #00e1ff;
-  text-align:center;
-  cursor:pointer;
-  transition:all 0.15s ease-in-out;
+  width: 140px;
+  height: 160px;
+  border: 1px solid #00e1ff;
+  background-color: #030303;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
 }
 
 /* hover */
 #leftField:hover, #rightField:hover{
-  background:#050505;
-  box-shadow:0 0 8px #00e1ff;
+  background-color: #050505;
+  box-shadow: 0 0 6px #00e1ff, 0 0 12px rgba(0, 225, 255, 0.6);
 }
 
 /* click (한 단계 더 가는 느낌) */
 #leftField:active, #rightField:active{
-  transform:scale(0.96);
-  box-shadow:0 0 4px #00e1ff;
+  transform: scale(0.96);
+  box-shadow: 0 0 4px #00e1ff;
 }
 
-th, td{
-  border:1px solid #00e1ff;
-  padding:6px;
+/* 결과 테이블 */
+#resultTable{
+  margin: 0 auto;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 260px;
+}
+#resultTable th, #resultTable td{
+  border: 1px solid #00e1ff;
+  padding: 6px 8px;
+}
+#resultTable th{
+  font-weight: bold;
+}
+.rankCell{
+  text-align: right;
+  width: 50px;
+}
+.nameCell{
+  text-align: left;
 }
 </style>
+
 </head>
 
 <body>
-<table id="mainTable">
+
+<table id="mainTable" align="center">
   <tr>
-    <td id="battleNumber" colspan="2">&nbsp;</td>
+    <td id="battleNumber" colspan="2">
+      <div id="title">당신의 최애 IDID 노래는?</div>
+      <div id="progress">진행도 0%</div>
+    </td>
   </tr>
   <tr>
-    <td id="leftField" onclick="if(!finishFlag)sortList(-1);"></td>
-    <td id="rightField" onclick="if(!finishFlag)sortList(1);"></td>
+    <td id="leftField" onclick="if(finishFlag==0)sortList(-1);">&nbsp;</td>
+    <td id="rightField" onclick="if(finishFlag==0)sortList(1);">&nbsp;</td>
   </tr>
 </table>
 
 <br>
-<div id="resultField" style="text-align:center;"></div>
 
-<script>
+<div id="resultField" style="text-align:center;">
+  <!-- 결과가 여기 표시됨 -->
+</div>
+
+<script type="text/javascript">
 initList();
 showImage();
 </script>
+
 </body>
 </html>
